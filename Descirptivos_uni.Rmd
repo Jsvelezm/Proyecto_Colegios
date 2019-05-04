@@ -1,0 +1,121 @@
+---
+title: "Descriptivos Univariados"
+author: ""
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Colegio Mayor San Bartolome
+
+## Objetivo:
+Presentar un analisis descriptivo de lo que se midio mediante el ejercicio auto-evaluativo de los estudiantes.
+
+
+Bachillerato: 899 bachillerato.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, inculde=FALSE, prompt=FALSE}
+#librerias necesearias.
+library("ggplot2")
+library(readxl)
+library("FactoMineR")
+library("factoextra")
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(scales) 
+
+base <- read_excel("A6-11_v2.xlsx")
+#View(Autoevaluacion_6_11)
+#ncol(ae611)
+
+names(base) <-c("mt" ,"A",	"N"	,"S","p1",	"p2",	"p3",	"p4",	"p5",	"p6",	"ap7",	"p8",	"p9", "p10",	"p11",	"p12",	"p13",	"ap14",	"p15",	"p16",	"p17",	"p18",	"p19",	"ap20",	"p21",	"p22",	"p23",	"p24",	"p25"	,"ap26"	,"p27"	,"p28",	"p29"	,"p30"	,"p31"	,"ap32")
+pre <- names(base)
+#length(c("mt" ,"A",	"N"	,"S","eu",	"p1","p2",	"p3",	"p4",	"p5",	"p6",	"ap7",	"p8",	"p9", "p10",	"p11",	"p12",	"p13",	"ap14",	"p15",	"p16",	"p17",	"p18",	"p19",	"ap20",	"p21",	"p22",	"p23",	"p24",	"p25"	,"ap26"	,"p27"	,"p28",	"p29"	,"p30"	,"p31"	,"ap32"))
+
+
+theme_set(theme_classic())
+cerradas=c("p2",	"p3",	"p4",	"p5",	"p6",	"p8",	"p9", "p10",	"p11","p12",	"p13","p15",	"p16",	"p17",	"p18",	"p19","p21",	"p22",	"p23",	"p24",	"p25","p27"	,"p28",	"p29"	,"p30"	,"p31")
+
+```
+
+## Resultados generales de bachillerato
+
+```{r, echo=FALSE, message=FALSE}
+inputPanel({ selectInput("q", label = "Pregunta:",
+              choices = cerradas, selected = "p2")})
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+renderPlot({
+  
+  #ggplot(base[cerradas], aes(x=base[input$q][[1]], fill=base[input$q][[1]]))+ 
+   # geom_bar(aes(y = (..count..)/sum(..count..), fill =as.factor(..x.. ))) +
+  
+  
+  ggplot(base[cerradas], aes(x=base[input$q][[1]])) + 
+    geom_bar(aes(y = (..count..)/sum(..count..), fill =as.factor(..x.. ))) + 
+    scale_y_continuous(labels=scales::percent) +
+    ylab("")+ theme(legend.position='none')+
+    geom_text(aes( label =paste( round(100*(..count..)/sum(..count..),2),"%","\n",..count..),size=10,y= (..count..)/sum(..count..) ), stat= "count", vjust =0.7, size=7)+
+    ggtitle(input$q)+xlab(paste(input$q))+theme(
+plot.title = element_text(color="BLUE", size=28, face="bold.italic"),
+axis.title.x = element_text(color="blue", size=28, face="bold"),
+axis.title.y = element_text(color="#993333", size=28, face="bold")
+)+ theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=24),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=24))
+  
+})
+```
+
+
+
+## Analisis por seccion
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+inputPanel(
+  selectInput("p", label = "Pregunta:",
+              choices = cerradas, selected = "p2"),
+ 
+  selectInput("Curso", label = "Curso:",
+              choices = sort(unique(base$S)) , selected = "601")
+  
+)  
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+renderPlot({
+  basep=base[base$S==input$Curso,]
+ggplot(basep[cerradas], aes(x=basep[input$p][[1]])) + 
+    geom_bar(aes(y = (..count..)/sum(..count..), fill =as.factor(..x.. ))) + 
+    scale_y_continuous(labels=scales::percent) +
+    ylab("")+ theme(legend.position='none')+
+    geom_text(aes( label =paste( round(100*(..count..)/sum(..count..),2),"%","\n",..count..),size=10,y= (..count..)/sum(..count..) ), stat= "count", vjust =0.7, size=7)+
+    ggtitle(input$p)+xlab(paste(input$p))+theme(
+plot.title = element_text(color="BLUE", size=28, face="bold.italic"),
+axis.title.x = element_text(color="blue", size=28, face="bold"),
+axis.title.y = element_text(color="#993333", size=28, face="bold")
+)+ theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=24),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=24))
+  
+})
+
+```
+
+
+
+
+
+
+

@@ -1,0 +1,132 @@
+---
+title: "Auto Evaluacion"
+author: "Jaime Velez"
+date: "3 de abril de 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Colegio Mayor San Bartolomé.
+
+## Objetivo:
+Presentar un análisis Descriptivo de lo que se midio mediante el ejercicio auto-evaluativo de los estudiantes.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, inculde=FALSE, prompt=FALSE}
+#librerias necesearias.
+library("ggplot2")
+library(readxl)
+library("FactoMineR")
+library("factoextra")
+
+base <- read_excel("A6-11_v2.xlsx")
+#View(Autoevaluacion_6_11)
+#ncol(ae611)
+pre <- names(base)
+#names(ae611) <-c("mt" ,"A",	"N"	,"S","p1",	"p2",	"p3",	"p4",	"p5",	"p6",	"ap7",	"p8",	"p9", "p10",	"p11",	"p12",	"p13",	"ap14",	"p15",	"p16",	"p17",	"p18",	"p19",	"ap20",	"p21",	"p22",	"p23",	"p24",	"p25"	,"ap26"	,"p27"	,"p28",	"p29"	,"p30"	,"p31"	,"ap32")
+
+#length(c("mt" ,"A",	"N"	,"S","eu",	"p1","p2",	"p3",	"p4",	"p5",	"p6",	"ap7",	"p8",	"p9", "p10",	"p11",	"p12",	"p13",	"ap14",	"p15",	"p16",	"p17",	  "p18",	"p19",	"ap20",	"p21",	"p22",	"p23",	"p24",	"p25"	,"ap26"	,"p27"	,"p28",	"p29"	,"p30"	,"p31"	,"ap32"))
+
+
+theme_set(theme_classic())
+
+```
+
+## Resultados de la Auto-Evaluación.
+
+
+
+```{r}
+inputPanel({ selectInput("q", label = "Pregunta:",
+              choices = pre[5:length(pre)], selected = "p2")})
+renderPlot({ggplot(base, aes(x=base[input$q][[1]], fill=base[input$q][[1]]))+geom_bar()},
+           width = "auto")
+```
+
+## Analisis de correspondencias multiples.
+
+La idea es ver como se relacionan cada una de las categorias de la autoevaluacion, de esta manera encontrar perfiles de los estudiantes que permitan generar estrategias de mejora.
+
+
+```{r correspondecias, message=FALSE, warning=FALSE}
+base2=base
+names(base2) <-c("mt" ,"A",	"N"	,"S","C","p1",	"p2",	"p3",	"p4",	"p5",	"p6",	"ap7",	"p8",	"p9", "p10",	"p11",	"p12",	"p13",	"ap14",	"p15",	"p16",	"p17",	"p18",	"p19",	"ap20",	"p21",	"p22",	"p23",	"p24",	"p25"	,"ap26"	,"p27"	,"p28",	"p29"	,"p30"	,"p31"	,"ap32")
+
+#abiertas
+#cerradas=c("p2",	"p3",	"p4",	"p5",	"p6",	"p8",	"p9", "p10",	"p11",	"p12",	"p13","p15",	"p16",	"p17",	"p18",	"p19","p21",	"p22",	"p23",	"p24",	"p25","p27"	,"p28",	"p29"	,"p30"	,"p31")
+
+cerradas=c("p2",	"p3",	"p4",	"p5",	"p6",	"p8",	"p9", "p10",	"p11","p12",	"p13","p15",	"p16",	"p17",	"p18",	"p19","p21",	"p22",	"p23",	"p24",	"p25","p27"	,"p28",	"p29"	,"p30"	,"p31")
+
+base2=base2[cerradas]
+#cm <- MCA(data.frame(base2[,6:10],base2[,12:16]))
+cm <- MCA(data.frame(base2))
+```
+
+```{r correspondecias_2, message=FALSE, warning=FALSE, include=TRUE}
+#fviz_famd_var(cm, elipses=TRUE)
+renderPlot({plot(cm$eig[,3])
+plot(cm$eig[,2])
+})
+#length(unique(base$`Marca temporal`))
+#por esta razón se puede usar la marca temporarl cómo indice
+
+a=as.factor(base$`Identifico y reconozco mis fortalezas y dificultades.`)
+b=as.factor(base$`Establezco relaciones cordiales con mis compaÃ±eros.`)
+#c=
+cor(cbind(a,b),method = "kendall", use="pairwise")
+
+```
+
+## Poder de las representaciones
+
+### contribuciones
+```{r}
+renderDataTable({cbind(rownames(cm$var$contrib),cm$var$contrib)})
+```
+
+### Cosenos cuadrados
+
+```{r}
+renderDataTable({cbind(rownames(cm$var$cos2),cm$var$cos2)})
+```
+
+
+
+## Análisis por curso
+
+
+
+```{r eruptions, echo=FALSE}
+inputPanel(
+  selectInput("p", label = "Pregunta:",
+              choices = pre[5:length(pre)], selected = "p2"),
+ 
+  selectInput("Curso", label = "Curso:",
+              choices = unique(base$Seccion) , selected = "p2")
+  
+)  
+  
+
+
+renderPlot({
+  basep=base[base$Seccion==input$Curso,]
+ggplot(basep, aes(x=basep[input$p][[1]], fill=basep[input$p][[1]]))+geom_bar()
+
+})
+renderPlot({
+  basep=base[base$Seccion==input$Curso,]
+ggplot(basep, aes(x="",y=basep[input$p][[1]], fill=basep[input$p][[1]]))+geom_bar(stat = "identity") +coord_polar(theta = "y")+ggtitle(label = input$p )
+
+})
+
+```
+
+
+
+
+
+
+
+
