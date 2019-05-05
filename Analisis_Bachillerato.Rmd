@@ -1,0 +1,163 @@
+---
+title: "Analisis de correspondencias"
+runtime: shiny
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE, paged.print=F}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+El objetivo de este script es relacionar las caracterizar a los estudiantes de bachillerato basado en las respuestas en la encuesta realizada para esto vamos a realizar un análisis de correspondencias.
+
+
+
+```{r , echo= F ,include=FALSE, message=FALSE, warning=FALSE, paged.print=F}
+
+library("ggplot2")
+library(readxl)
+library("FactoMineR")
+library("factoextra")
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(scales) 
+library(ggrepel)
+library(car)
+library(rgl)
+library(shiny)
+library(rlist)
+base = read_excel("A6-11_v2.xlsx")
+
+preguntas = colnames(base) 
+
+names(base) = c("mt" ,"A",	"N"	,"S","p1","p2",	"p3",	"p4",	"p5",	"p6",	"ap7",	"p8",	"p9", "p10",	"p11",	"p12",	"p13",	"ap14",	"p15",	"p16",	"p17",	"p18",	"p19",	"ap20",	"p21",	"p22",	"p23",	"p24",	"p25"	,"ap26"	,"p27"	,"p28",	"p29"	,"p30"	,"p31"	,"ap32")
+
+cerradas = c("p2",	"p3",	"p4",	"p5",	"p6",	"p8",	"p9", "p10",	"p11","p12",	"p13","p15",	"p16",	"p17",	"p18",	"p19","p21",	"p22",	"p23",	"p24",	"p25","p27"	,"p28",	"p29"	,"p30"	,"p31")
+
+# Creacion de diccionario con preguntas para facilitar la interpretació
+
+dic = list()
+for ( i  in 1:length(names(base))) {
+  dic[names(base)[i]] = preguntas[i]
+}
+
+dic["p8"]
+
+# IBase preguntas que estan cerradas
+
+basecerrada = base[cerradas]
+
+```
+
+## Análisis Bivariado
+Dada como esta hecha la encuesta es dificil hacer un análisis bivariado, teniendo en cuenta que solo hay 3 categorias es muy fácil relacionar dos preguntas que no tienen asociación alguna.
+
+```{r , echo= F ,include=FALSE, message=FALSE, warning=FALSE, paged.print=F}
+
+num = length(names(base)) - 1
+Index = c()
+Cramer = c()
+for (ii in 1:num) {
+  for (kk in (ii+1):(num+1)) {
+    try(
+      if (cramer.v(table(base[,c(ii,kk)])) > 0.7) {
+        Index = c(Index, paste(preguntas[ii],preguntas[kk]))
+        Cramer = c(Cramer, cramer.v(table(base[,c(ii,kk)])))
+      }
+    )
+  }  
+}
+Cramer
+Index
+
+table(base[,c(8,7)])
+?cramer
+
+
+```
+
+
+
+## Análisis Multiple
+```{r, echo= F ,include=FALSE, message=FALSE, warning=FALSE, paged.print=F}
+mca = MCA(basecerrada)
+mca$var$contrib[,c(1)][mca$var$contrib[,c(1)] > 2]
+mca$var$contrib[,c(2)][mca$var$contrib[,c(2)] > 4]
+
+fviz_mca_var(mca)
+
+# Variables mas importantes Dim 1
+dic[c("p2","p5","p29","p27","p23")]
+# Variables mas importantes Dim 2
+dic[c("p15","p19","p23","p16","p17","p18")]
+
+
+
+```
+
+```{r eruptions, echo=FALSE}
+
+
+renderPlot({
+  df = mca$var$coord[,c(1,2)]
+  df = data.frame(df)
+  names(df) = c("Como_me_percibo","Relación_con_familia")
+  plot <-ggplot(df,aes(x=Como_me_percibo, y=Relación_con_familia)) +
+  annotate("rect", xmin=-Inf, xmax=0, ymin=-Inf, ymax=0, fill="yellow", alpha=0.25) +
+  annotate("rect", xmin=0, xmax=Inf, ymin=-Inf, ymax=0, fill="blue", alpha=0.25) +
+  annotate("rect", xmin=0, xmax=Inf, ymin=0, ymax=Inf, fill="red", alpha=0.25) +
+  annotate("rect", xmin=-Inf, xmax=0, ymin=0, ymax=Inf, fill="green", alpha=0.25)+
+  geom_point() + 
+  geom_text_repel(aes(label=ifelse(df[,1]>1 & df[,2]>1,rownames(df),''))) +
+  geom_text_repel(aes(label=ifelse(df[,1]<0 & df[,2]>0.3,rownames(df),''))) + 
+  geom_text_repel(aes(label=ifelse(df[,1]>0.4 & df[,2]< -0.4,rownames(df),'')))  
+  plot
+  
+  
+
+  })
+```
+### Preguntas relacionadas con la primera dimension
+```{r , echo =F}
+
+dic[c("p2","p5","p29","p27","p23")]
+
+```
+### Preguntas relacionadas con la segunda dimension
+```{r,echo= F}
+dic[c("p15","p19","p23","p16","p17","p18")]
+
+```
+
+### Por curso
+
+```{r, echo=F}
+
+inputPanel(
+  selectInput("curso", label = "Selección de curso",
+              choices = names(table(base$S)))
+)
+
+renderPlot({
+  df = mca$ind$coord[base$S == input$curso ,c(1,2)]
+  df = data.frame(df)
+  names(df) = c("Como_me_percibo","Relación_con_familia")
+  plot <-ggplot(df,aes(x=Como_me_percibo, y=Relación_con_familia)) +
+  annotate("rect", xmin=-Inf, xmax=0, ymin=-Inf, ymax=0, fill="yellow", alpha=0.25) +
+  annotate("rect", xmin=0, xmax=Inf, ymin=-Inf, ymax=0, fill="blue", alpha=0.25) +
+  annotate("rect", xmin=0, xmax=Inf, ymin=0, ymax=Inf, fill="red", alpha=0.25) +
+  annotate("rect", xmin=-Inf, xmax=0, ymin=0, ymax=Inf, fill="green", alpha=0.25)+
+  geom_point() + 
+  geom_text_repel(aes(label=ifelse(df[,1] & df[,2],rownames(df),''))) +
+  geom_text_repel(aes(label=ifelse(df[,1] & df[,2],rownames(df),''))) + 
+  geom_text_repel(aes(label=ifelse(df[,1] & df[,2],rownames(df),'')))  
+  plot
+})
+
+```
+
+
+
+
+
