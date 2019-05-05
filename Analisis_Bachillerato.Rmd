@@ -27,6 +27,8 @@ library(car)
 library(rgl)
 library(shiny)
 library(rlist)
+library(questionr)
+
 base = read_excel("A6-11_v2.xlsx")
 
 preguntas = colnames(base) 
